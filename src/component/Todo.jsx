@@ -1,98 +1,113 @@
-import React from 'react'
-import { useState ,useEffect} from 'react';
-import { Container, Col, Row, Card, Button, Form } from 'react-bootstrap'
-
- 
-
-
-
-
-
-var today = new Date();
-
-var date = today.toLocaleString("en-US", { weekday: "short", day: '2-digit', month: "long", })
-
-const Todo = () => {
-  
-//hook for holding all the tasks
-const [todos, setTodos] = useState([]);
-
-//hook for getting the data from the input field
-const [newTodo, setNewtodo] = useState();
-
-//function for storing the data into local Storage
-const saveData = (newtask) => {
-  localStorage.setItem("tasks", JSON.stringify(newtask));
-}
-
-//function for adding the new todo task
-const AddTodo = () => {
-  let myTodos = [...todos, { todo: newTodo, id: Date.now() }];
-  setTodos(myTodos);
-  //empty the input field
-  setNewtodo("");
-
-  saveData(myTodos);
-}
-
-//function for deleting the todos from local Storage as well
-const deleteTodo = (id) => {
-  let deltodo = todos.filter((todo) => todo.id !== id);
-  setTodos(deltodo);
-
-  //also need to update this from local Storage
-  saveData(deltodo);
-}
-
-//using the useEffect hook for showing the taks immediently 
-useEffect(() => {
-  if (localStorage.getItem("tasks")) {
-    //then pass the localStorage data to my hook that is holding all the tasks
-    setTodos(JSON.parse(localStorage.getItem("tasks")));
+import { toHaveDescription } from '@testing-library/jest-dom/dist/matchers';
+import React, { useEffect, useState } from 'react'
+import { Col, Container, Row, Form, Button, Table } from 'react-bootstrap'
+  const getLocalItmes = () => {
+    let list = localStorage.getItem('lists');
+    console.log(list);
+    if (list) {
+      return JSON.parse(localStorage.getItem('lists'));
+    } else {
+      return [];
+    }
   }
-}, [])
+  const Todo = () => {
+    var today = new Date();
+  var date = today.toLocaleString("en-US", { weekday: "short", day: '2-digit', month: "long", });
+    const [inputData, setInputData] = useState('');
+    const [items, setItems] = useState(getLocalItmes());
+    const [toggleSubmit, setToggleSubmit] = useState(true);
+    const [isEditItem, setIsEditItem] = useState(null);
+    const AddTodo = () => {
+      if (!inputData) {
+       
+      } else if (inputData && !toggleSubmit) {
+        setItems(
+          items.map((elem) => {
+            if (elem.id === isEditItem) {
+              return { ...elem, name: inputData }
+            }
+            return elem;
+          })
+        )
+        setToggleSubmit(true);
+        setInputData('');
+        setIsEditItem(null);
+      } else {
+        const allInputData = { id: new Date().getTime().toString(), name: inputData }
+        setItems([...items, allInputData]);
+        setInputData('')
+      }
+    }
+  // delete the items
+  const deleteTodo = (index) => {
+    const updateditems = items.filter((elem) => {
+      return index !== elem.id;
+    });
+    setItems(updateditems);
+  }
+  const editItem = (id) => {
+    let newEditItem = items.find((elem) => {
+      return elem.id === id
+    });
+    console.log(newEditItem);
+    setToggleSubmit(false);
+    setInputData(newEditItem.name);
+    setIsEditItem(id);
+  }
+  // remove all
+  const removeAll = () => {
+    setItems([]);
+  }
+  // add data to localStorage
+  useEffect(() => {
+    localStorage.setItem('lists', JSON.stringify(items))
+  }, [items]);
   return (
     <div>
-      <Container>
+    <Container>
         <Row>
-          <Col sm={2}></Col>
-          <Col sm={4} md={8}>
-          
-            <Form className='text-center m-4'>
-            <table className='table table-info' >
+          <Col sm={3}>
+          </Col>
+        <Col sm={12} md={4} lg={8}>
+        <Table striped bordered hover size="lg" className='toDoTable' >
+            <thead>
             <tr>
-              <th>ToDo List </th>
-              <th>Delete</th>
-              <th>Update</th>
+              <th style={{textAlign:"left"}}>ToDo List </th>
+              <th style={{textAlign:"left"}} >Delete</th>
+              <th style={{textAlign:"left"}} >Update</th>
             </tr>
+            </thead>
             {
-              todos.map((tod) => (
+              items.map((tod) => (
                 <tr>
-                  <td>{tod.todo}</td><br/>
+                  <td>{tod.name}</td>
                   <td><Button onClick={() => deleteTodo(tod.id)} className="btn btn-danger"> <i className="fa fa-remove fa-remove"/></Button></td>
-                    <td><Button onClick={() => deleteTodo(tod.id)} className="btn btn-info "> <i className="fa fa-edit fa-edit"/></Button></td>
-
+                  <td><Button onClick={() => editItem(tod.id)} className="btn btn-info "> <i className="fa fa-edit fa-edit"/></Button></td>
                 </tr>
               ))
             }
-      </table>
-              
-
-              <Form.Group className="mb-4">
-                <p className='text-left'> <strong>Today</strong> {date} </p>
-                <Form.Control as="textarea" value={newTodo} onChange={(e) => setNewtodo(e.target.value)}  rows={5} placeholder="Task Name" />
-              </Form.Group>
-                <Button variant="dark"  ><i className="fa fa-edit fa-edit"/></Button>{' '}
-                <Button variant="danger"  onClick={AddTodo}  ><i className="fa fa-plus fa-plus"/></Button>
-
-            </Form>
+      </Table>
+        <Form>
+  <Form.Group className="mb-3" controlId="formBasicEmail">
+    <Form.Label>
+       <strong>Today:</strong>
+      {date}</Form.Label>
+    <Form.Control as="textarea" rows={5} placeholder="Enter task"  value={inputData} onChange={(e) => setInputData(e.target.value)}/>
+    {
+              toggleSubmit ? <i className="fa fa add-btn" title="Add Item" onClick={AddTodo}></i> :
+                <i className="far fa-edit add-btn" title="Update Item" onClick={AddTodo}></i>
+            }
+  </Form.Group>
+  <Button variant="danger" type="submit" className='addButton' onClick={AddTodo}>
+  <i className="fa fa-plus fa-plus"></i>
+  </Button>
+</Form>
+        </Col>
+        <Col sm={3}>
           </Col>
-          <Col sm={3}></Col>
         </Row>
-      </Container>
-
+    </Container>
     </div>
   )
 }
-
 export default Todo
